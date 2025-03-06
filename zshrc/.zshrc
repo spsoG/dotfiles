@@ -85,11 +85,8 @@ export XDG_CONFIG_HOME="/Users/sog/.config"
 
 
 # startup
-
 eval "$(zoxide init zsh)"
-export gpg_tty=$(tty)
 export GPG_TTY=$(tty)
-
 
 # Added by LM Studio CLI (lms)
 export PATH="$PATH:/Users/sog/.lmstudio/bin"
