@@ -90,6 +90,7 @@
         "ollama"
         "rclone"
         "gnupg"
+        "stow"
       ];
       homebrew.masApps = {
 	      Telegram = 747648890;
