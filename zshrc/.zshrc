@@ -74,6 +74,7 @@ alias iaw="fabric -p improve_academic_writing"
 alias iw="fabric -p imporove_writing"
 alias summarize="fabric -p summarize"
 
+# fabric function
 yt() {
     local video_link="$1"
     fabric -y "$video_link" --transcript
