@@ -1,0 +1,330 @@
+#! /nix/store/iv1k5wr7hbxm51qmdn6l2inq7rd2vfhk-bash-5.2p37/bin/bash
+set -e
+set -o pipefail
+export PATH="/nix/store/2l7h1k77n3dxw34ipwll9x2jrxf1whi2-gnugrep-3.11/bin:/nix/store/27hlrqpjy40ifmmy3rw2fbi5b57l8cmw-coreutils-9.5/bin:/nix/store/zdafq94kb8xq6vw8wa0pnl39nqizb0ly-darwin-system-25.05.ae406c0/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+systemConfig=/nix/store/zdafq94kb8xq6vw8wa0pnl39nqizb0ly-darwin-system-25.05.ae406c0
+
+# Ensure a consistent umask.
+umask 0022
+
+
+
+# We run `etcChecks` again just in case someone runs `activate`
+# directly without `activate-user`.
+declare -A etcSha256Hashes=(
+  [bashrc]='444c716ac2ccd9e1e3347858cb08a00d2ea38e8c12fdc5798380dc261e32e9ef 617b39e36fa69270ddbee19ddc072497dbe7ead840cbd442d9f7c22924f116f4 6be16cf7c24a3c6f7ae535c913347a3be39508b3426f5ecd413e636e21031e66 08ffbf991a9e25839d38b80a0d3bce3b5a6c84b9be53a4b68949df4e7e487bb7'
+  [nix/nix.conf]='7c2d80499b39256b03ee9abd3d6258343718306aca8d472c26ac32c9b0949093 19299897fa312d9d32b3c968c2872dd143085aa727140cec51f57c59083e93b9 c4ecc3d541c163c8fcc954ccae6b8cab28c973dc283fea5995c69aaabcdf785f ef78f401a9b5a42fd15e967c50da384f99ec62f9dbc66ea38f1390b46b63e1ff c06b0c6080dd1d62e61a30cfad100c0cfed2d3bcd378e296632dc3b28b31dc69 ff08c12813680da98c4240328f828647b67a65ba7aa89c022bd8072cba862cf1 f3e03d851c240c1aa7daccd144ee929f0f5971982424c868c434eb6030e961d4 c6080216f2a170611e339c3f46e4e1d61aaf0d8b417ad93ade8d647da1382c11 97f4135d262ca22d65c9554aad795c10a4491fa61b67d9c2430f4d82bbfec9a2 5d23e6d7015756c6f300f8cd558ec4d9234ca61deefd4f2478e91a49760b0747 e4974acb79c56148cb8e92137fa4f2de9b7356e897b332fc4e6769e8c0b83e18 966d22ef5bb9b56d481e8e0d5f7ca2deaf4d24c0f0fc969b2eeaa7ae0aa42907 53712b4335030e2dbfb46bb235f8cffcac83fea404bd32dc99417ac89e2dd7c5 6bb8d6b0dd16b44ee793a9b8382dac76c926e4c16ffb8ddd2bb4884d1ca3f811 24797ac05542ff8b52910efc77870faa5f9e3275097227ea4e50c430a5f72916 b027b5cad320b5b8123d9d0db9f815c3f3921596c26dc3c471457098e4d3cc40'
+  [nix/registry.json]=''
+  [ssh/ssh_config.d/100-nix-darwin.conf]=''
+  [ssh/sshd_config.d/101-authorized-keys.conf]=5a5dc1e20e8abc162ad1cc0259bfd1dbb77981013d87625f97d9bd215175fc0a
+  [ssl/certs/ca-certificates.crt]=''
+  [zprofile]='db8422f92d8cff684e418f2dcffbb98c10fe544b5e8cd588b2009c7fa89559c5 0235d3c1b6cf21e7043fbc98e239ee4bc648048aafaf6be1a94a576300584ef2'
+  [zshenv]=d07015be6875f134976fce84c6c7a77b512079c1c5f9594dfa65c70b7968b65f
+  [zshrc]='19a2d673ffd47b8bed71c5218ff6617dfc5e8533b240b9ba79142a45f8823c23 fb5827cb4712b7e7932d438067ec4852c8955a9ff0f55e282473684623ebdfa1 c5a00c072c920f46216454978c44df044b2ec6d03409dc492c7bdcd92c94a110 40b0d8751adae5b0100a4f863be5b75613a49f62706427e92604f7e04d2e2261 2af1b563e389d11b76a651b446e858116d7a20370d9120a7e9f78991f3e5f336'
+)
+
+declare -a etcProblems=()
+
+while IFS= read -r -d "" configFile; do
+  subPath=${configFile#"$systemConfig"/etc/}
+  etcStaticFile=/etc/static/$subPath
+  etcFile=/etc/$subPath
+
+  # We need to check files that exist and aren't already links to
+  # $etcStaticFile for known hashes.
+  if [[
+    -e $etcFile
+    && $(readlink "$etcFile") != "$etcStaticFile"
+  ]]; then
+    # Only check hashes of paths that resolve to regular files;
+    # everything else (e.g. directories) we complain about
+    # unconditionally.
+    if [[ -f $(readlink -f "$etcFile") ]]; then
+      etcFileSha256Output=$(shasum -a 256 "$etcFile")
+      etcFileSha256Hash=${etcFileSha256Output%% *}
+      for knownSha256Hash in ${etcSha256Hashes[$subPath]}; do
+        if [[ $etcFileSha256Hash == "$knownSha256Hash" ]]; then
+          # Hash matches, OK to overwrite; go to the next file.
+          continue 2
+        fi
+      done
+    fi
+    etcProblems+=("$etcFile")
+  fi
+done < <(find -H "$systemConfig/etc" -type l -print0)
+
+if (( ${#etcProblems[@]} )); then
+  printf >&2 '\x1B[1;31merror: Unexpected files in /etc, aborting '
+  printf >&2 'activation\x1B[0m\n'
+  printf >&2 'The following files have unrecognized content and would be '
+  printf >&2 'overwritten:\n\n'
+  printf >&2 '  %s\n' "${etcProblems[@]}"
+  printf >&2 '\nPlease check there is nothing critical in these files, '
+  printf >&2 'rename them by adding .before-nix-darwin to the end, and '
+  printf >&2 'then try again.\n'
+  exit 2
+fi
+
+nixCustomConfKnownSha256Hashes=(
+  # v0.33.0
+  6787fade1cf934f82db554e78e1fc788705c2c5257fddf9b59bdd963ca6fec63
+  # v0.34.0
+  3bd68ef979a42070a44f8d82c205cfd8e8cca425d91253ec2c10a88179bb34aa
+)
+if [[ -e /etc/nix/nix.custom.conf ]]; then
+  nixCustomConfSha256Output=$(shasum -a 256 /etc/nix/nix.custom.conf)
+  nixCustomConfSha256Hash=${nixCustomConfSha256Output%% *}
+  nixCustomConfIsKnown=
+  for nixCustomConfKnownSha256Hash
+    in "${nixCustomConfKnownSha256Hashes[@]}"
+  do
+    if
+      [[ $nixCustomConfSha256Hash == "$nixCustomConfKnownSha256Hash" ]]
+    then
+      nixCustomConfIsKnown=1
+      break
+    fi
+  done
+  if [[ ! $nixCustomConfIsKnown ]]; then
+    printf >&2 '\e[1;31merror: custom settings in `/etc/nix/nix.custom.conf`, aborting activation\e[0m\n'
+    printf >&2 'You will need to migrate these to nix-darwin `nix.*` settings if you\n'
+    printf >&2 'wish to keep them. Check the manual for the appropriate settings and\n'
+    printf >&2 'add them to your system configuration, then run:\n'
+    printf >&2 '\n'
+    printf >&2 '  $ sudo mv /etc/nix/nix.custom.conf{,.before-nix-darwin}\n'
+    printf >&2 '\n'
+    printf >&2 'and activate your system again.\n'
+    exit 2
+  fi
+fi
+
+
+
+
+# Set up applications.
+echo "setting up /Applications/Nix Apps..." >&2
+
+ourLink () {
+  local link
+  link=$(readlink "$1")
+  [ -L "$1" ] && [ "${link#*-}" = 'system-applications/Applications' ]
+}
+
+# Clean up for links created at the old location in HOME
+if ourLink ~/Applications; then
+  rm ~/Applications
+elif ourLink ~/Applications/'Nix Apps'; then
+  rm ~/Applications/'Nix Apps'
+fi
+
+if [ ! -e '/Applications/Nix Apps' ] \
+   || ourLink '/Applications/Nix Apps'; then
+  ln -sfn /nix/store/8yz90k26yk6hzya2mwj2g1vj3bzlg5y1-system-applications/Applications '/Applications/Nix Apps'
+else
+  echo "warning: /Applications/Nix Apps is not owned by nix-darwin, skipping App linking..." >&2
+fi
+
+# PAM settings
+echo >&2 "setting up pam..."
+# Enable sudo Touch ID authentication, if not already enabled
+if ! grep 'pam_tid.so' /etc/pam.d/sudo > /dev/null; then
+  /nix/store/a682ixpxigvv182r3l4km27vc17x1848-gnused-4.9/bin/sed -i '2i\
+auth       sufficient     pam_tid.so # nix-darwin: security.pam.enableSudoTouchIdAuth
+  ' /etc/pam.d/sudo
+fi
+
+
+
+# Applying patches to /.
+echo "applying patches..." >&2
+
+for f in /run/current-system/patches/*; do
+  [[ -e "$f" ]] || break  # handle when directory is empty
+  f=${f#/run/current-system/patches/}
+
+  if [[ ! -e "/nix/store/8q9fwbc2vs5k1bdpdw4wxl34svzy3xw6-patches/patches/$f" ]]; then
+    patch --force --reverse --backup -d / -p1 < "/run/current-system/patches/$f" || true
+  fi
+done
+
+
+
+# Set up the statically computed bits of /etc.
+printf >&2 'setting up /etc...\n'
+
+ln -sfn "$(readlink -f "$systemConfig/etc")" /etc/static
+
+while IFS= read -r -d "" etcStaticFile; do
+  etcFile=/etc/${etcStaticFile#/etc/static/}
+  etcDir=${etcFile%/*}
+
+  if [[ ! -d $etcDir ]]; then
+    mkdir -p "$etcDir"
+  fi
+
+  if [[ -e $etcFile ]]; then
+    if [[ $(readlink -- "$etcFile") == "$etcStaticFile" ]]; then
+      continue
+    else
+      mv "$etcFile" "$etcFile.before-nix-darwin"
+    fi
+  fi
+
+  ln -s "$etcStaticFile" "$etcFile"
+done < <(find -H /etc/static -type l -print0)
+
+while IFS= read -r -d "" etcFile; do
+  etcStaticFile=/etc/static/${etcFile#/etc/}
+
+  # Delete stale links into /etc/static.
+  if [[
+    $(readlink -- "$etcFile") == "$etcStaticFile"
+    && ! -e $etcStaticFile
+  ]]; then
+    rm "$etcFile"
+  fi
+done < <(find -H /etc -type l -print0)
+
+# Clean up .before-nix-darwin file left over from using knownSha256Hashes
+auth_keys_orig=/etc/ssh/sshd_config.d/101-authorized-keys.conf.before-nix-darwin
+
+if [ -e "$auth_keys_orig" ] && [ "$(shasum -a 256 $auth_keys_orig | cut -d ' ' -f 1)" = "5a5dc1e20e8abc162ad1cc0259bfd1dbb77981013d87625f97d9bd215175fc0a" ]; then
+  rm "$auth_keys_orig"
+fi
+
+
+# Set up launchd services in /Library/LaunchAgents and /Library/LaunchDaemons
+echo "setting up launchd services..." >&2
+
+
+
+
+if ! diff '/nix/store/2rnp08j766i7k68d5qz318qj1s5ww246-launchd/Library/LaunchDaemons/org.nixos.activate-system.plist' '/Library/LaunchDaemons/org.nixos.activate-system.plist' &> /dev/null; then
+  if test -f '/Library/LaunchDaemons/org.nixos.activate-system.plist'; then
+    echo "reloading service $(basename org.nixos.activate-system.plist .plist)" >&2
+    launchctl unload '/Library/LaunchDaemons/org.nixos.activate-system.plist' || true
+  else
+    echo "creating service $(basename org.nixos.activate-system.plist .plist)" >&2
+  fi
+  if test -L '/Library/LaunchDaemons/org.nixos.activate-system.plist'; then
+    rm '/Library/LaunchDaemons/org.nixos.activate-system.plist'
+  fi
+  cp -f '/nix/store/2rnp08j766i7k68d5qz318qj1s5ww246-launchd/Library/LaunchDaemons/org.nixos.activate-system.plist' '/Library/LaunchDaemons/org.nixos.activate-system.plist'
+  launchctl load -w '/Library/LaunchDaemons/org.nixos.activate-system.plist'
+fi
+
+if ! diff '/nix/store/2rnp08j766i7k68d5qz318qj1s5ww246-launchd/Library/LaunchDaemons/org.nixos.nix-daemon.plist' '/Library/LaunchDaemons/org.nixos.nix-daemon.plist' &> /dev/null; then
+  if test -f '/Library/LaunchDaemons/org.nixos.nix-daemon.plist'; then
+    echo "reloading service $(basename org.nixos.nix-daemon.plist .plist)" >&2
+    launchctl unload '/Library/LaunchDaemons/org.nixos.nix-daemon.plist' || true
+  else
+    echo "creating service $(basename org.nixos.nix-daemon.plist .plist)" >&2
+  fi
+  if test -L '/Library/LaunchDaemons/org.nixos.nix-daemon.plist'; then
+    rm '/Library/LaunchDaemons/org.nixos.nix-daemon.plist'
+  fi
+  cp -f '/nix/store/2rnp08j766i7k68d5qz318qj1s5ww246-launchd/Library/LaunchDaemons/org.nixos.nix-daemon.plist' '/Library/LaunchDaemons/org.nixos.nix-daemon.plist'
+  launchctl load -w '/Library/LaunchDaemons/org.nixos.nix-daemon.plist'
+fi
+
+
+for f in /run/current-system/Library/LaunchAgents/*; do
+  [[ -e "$f" ]] || break  # handle when directory is empty
+  f=${f#/run/current-system/Library/LaunchAgents/}
+
+  if [[ ! -e "/nix/store/2rnp08j766i7k68d5qz318qj1s5ww246-launchd/Library/LaunchAgents/$f" ]]; then
+    echo "removing service $(basename "$f" .plist)" >&2
+    launchctl unload "/Library/LaunchAgents/$f" || true
+    if [[ -e "/Library/LaunchAgents/$f" ]]; then
+      rm -f "/Library/LaunchAgents/$f"
+    fi
+  fi
+done
+
+for f in /run/current-system/Library/LaunchDaemons/*; do
+  [[ -e "$f" ]] || break  # handle when directory is empty
+  f=${f#/run/current-system/Library/LaunchDaemons/}
+
+  if [[ ! -e "/nix/store/2rnp08j766i7k68d5qz318qj1s5ww246-launchd/Library/LaunchDaemons/$f" ]]; then
+    echo "removing service $(basename "$f" .plist)" >&2
+    launchctl unload "/Library/LaunchDaemons/$f" || true
+    if [[ -e "/Library/LaunchDaemons/$f" ]]; then
+      rm -f "/Library/LaunchDaemons/$f"
+    fi
+  fi
+done
+
+# Follow up on the `/etc/nix/nix.custom.conf` check.
+# TODO: Use a more generalized file placement mechanism for this.
+if [[ -e /etc/nix/nix.custom.conf ]]; then
+  mv /etc/nix/nix.custom.conf{,.before-nix-darwin}
+fi
+if ! diff /etc/nix/nix.conf /run/current-system/etc/nix/nix.conf &> /dev/null || ! diff /etc/nix/machines /run/current-system/etc/nix/machines &> /dev/null; then
+    echo "reloading nix-daemon..." >&2
+    launchctl kill HUP system/org.nixos.nix-daemon
+fi
+while ! nix-store --store daemon -q --hash /nix/store/iv1k5wr7hbxm51qmdn6l2inq7rd2vfhk-bash-5.2p37/bin/bash &>/dev/null; do
+    echo "waiting for nix-daemon" >&2
+    launchctl kickstart system/org.nixos.nix-daemon
+done
+
+
+echo "configuring networking..." >&2
+
+
+
+
+
+
+
+
+
+echo "configuring power..." >&2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+printf >&2 'setting up /Library/Fonts/Nix Fonts...\n'
+
+# rsync uses the mtime + size of files to determine whether they
+# need to be copied by default. This is inadequate for Nix store
+# paths, but we don't want to use `--checksum` as it makes
+# activation consistently slow when you have large fonts
+# installed. Instead, we ensure that fonts are linked according to
+# their full store paths in `system.build.fonts`, so that any
+# given font path should only ever have one possible content.
+/nix/store/szyb3yfsblppy5yzzda6162f6rmx331n-rsync-3.4.1/bin/rsync \
+  --archive \
+  --copy-links \
+  --delete-during \
+  --delete-missing-args \
+  "$systemConfig/Library/Fonts/Nix Fonts" \
+  '/Library/Fonts/'
+
+echo "setting nvram variables..." >&2
+
+
+
+
+
+
+# Make this configuration the current configuration.
+# The readlink is there to ensure that when $systemConfig = /system
+# (which is a symlink to the store), /run/current-system is still
+# used as a garbage collection root.
+ln -sfn "$(readlink -f "$systemConfig")" /run/current-system
+
+# Prevent the current configuration from being garbage-collected.
+ln -sfn /run/current-system /nix/var/nix/gcroots/current-system
+

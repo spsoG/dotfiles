@@ -1,0 +1,202 @@
+This is zsh.info, produced by makeinfo version 7.1.1 from tzsh.texi.
+
+INFO-DIR-SECTION Utilities
+START-INFO-DIR-ENTRY
+* ZSH: (zsh).                     The Z Shell Manual.
+END-INFO-DIR-ENTRY
+
+
+Indirect:
+zsh.info-1: 192
+zsh.info-2: 320013
+zsh.info-3: 607043
+zsh.info-4: 915372
+zsh.info-5: 1214284
+zsh.info-6: 1504035
+
+Tag Table:
+(Indirect)
+Node: Top192
+Node: The Z Shell Manual4413
+Node: Introduction5916
+Node: Author6693
+Node: Availability7137
+Node: Mailing Lists7601
+Node: The Zsh FAQ9145
+Node: The Zsh Web Page9650
+Node: The Zsh Userguide9934
+Node: See Also10552
+Node: Roadmap10868
+Node: Invocation18517
+Node: Compatibility23093
+Node: Restricted Shell25355
+Node: Files29117
+Node: Shell Grammar31628
+Node: Simple Commands & Pipelines31942
+Node: Precommand Modifiers35713
+Node: Complex Commands38008
+Node: Alternate Forms For Complex Commands47648
+Node: Reserved Words50114
+Node: Errors50715
+Node: Comments53070
+Node: Aliasing53446
+Node: Quoting57634
+Node: Redirection58680
+Node: Command Execution71211
+Node: Functions72972
+Node: Jobs & Signals88272
+Node: Arithmetic Evaluation93661
+Node: Conditional Expressions104211
+Node: Prompt Expansion112575
+Node: Expansion127567
+Node: History Expansion129141
+Node: Overview130039
+Node: Event Designators132685
+Node: Word Designators134060
+Node: Modifiers135139
+Node: Process Substitution144834
+Node: Parameter Expansion150151
+Node: Command Substitution200249
+Node: Arithmetic Expansion201125
+Node: Brace Expansion201557
+Node: Filename Expansion204700
+Node: Dynamic named directories205999
+Node: Static named directories210011
+Node: `=' expansion211366
+Node: Notes211744
+Node: Filename Generation212556
+Node: Parameters250544
+Node: Array Parameters253616
+Node: Positional Parameters274896
+Node: Local Parameters276312
+Node: Parameters Set By The Shell277904
+Node: Parameters Used By The Shell292924
+Node: Options320013
+Node: Specifying Options320235
+Node: Description of Options321972
+Node: Option Aliases391775
+Node: Single Letter Options392708
+Node: Shell Builtin Commands394722
+Node: Zsh Line Editor528355
+Node: Keymaps530378
+Node: Zle Builtins534533
+Node: Zle Widgets560706
+Node: User-Defined Widgets561786
+Node: Standard Widgets578596
+Node: Movement579635
+Node: History Control583497
+Node: Modifying Text596985
+Node: Arguments607043
+Node: Completion609109
+Node: Miscellaneous610965
+Node: Text Objects625824
+Node: Character Highlighting627344
+Node: Completion Widgets636394
+Node: Completion Special Parameters638436
+Node: Completion Builtin Commands655125
+Node: Completion Condition Codes674402
+Node: Completion Matching Control675332
+Node: Completion Widget Example685074
+Node: Completion System685720
+Node: Initialization689286
+Node: Completion System Configuration708007
+Node: Control Functions803486
+Node: Bindable Commands823330
+Node: Completion Functions832323
+Node: Completion System Variables915372
+Node: Completion Directories916765
+Node: Completion Using compctl918572
+Node: Command Flags920068
+Node: Option Flags924551
+Node: Simple Flags925329
+Node: Flags with Arguments927004
+Node: Control Flags929990
+Node: Alternative Completion939779
+Node: Extended Completion940478
+Node: Example944731
+Node: Zsh Modules945386
+Node: The zsh/attr Module949508
+Node: The zsh/cap Module950861
+Node: The zsh/clone Module951770
+Node: The zsh/compctl Module953664
+Node: The zsh/complete Module954135
+Node: The zsh/complist Module954477
+Node: The zsh/computil Module970921
+Node: The zsh/curses Module974879
+Node: The zsh/datetime Module988306
+Node: The zsh/db/gdbm Module991785
+Node: The zsh/deltochar Module994232
+Node: The zsh/example Module994864
+Node: The zsh/files Module995283
+Node: The zsh/langinfo Module1003690
+Node: The zsh/mapfile Module1004319
+Node: The zsh/mathfunc Module1007094
+Node: The zsh/nearcolor Module1011178
+Node: The zsh/newuser Module1013072
+Node: The zsh/parameter Module1015566
+Node: The zsh/pcre Module1025153
+Node: The zsh/param/private Module1028483
+Node: The zsh/regex Module1032740
+Node: The zsh/sched Module1034418
+Node: The zsh/net/socket Module1037407
+Node: The zsh/stat Module1039553
+Node: The zsh/system Module1045938
+Node: The zsh/net/tcp Module1057334
+Node: The zsh/termcap Module1062276
+Node: The zsh/terminfo Module1062794
+Node: The zsh/watch Module1063325
+Node: The zsh/zftp Module1067637
+Node: The zsh/zle Module1087500
+Node: The zsh/zleparameter Module1087758
+Node: The zsh/zprof Module1088893
+Node: The zsh/zpty Module1092146
+Node: The zsh/zselect Module1096686
+Node: The zsh/zutil Module1100135
+Node: Calendar Function System1118151
+Node: Calendar File and Date Formats1119417
+Node: Calendar System User Functions1130854
+Node: Calendar Styles1148781
+Node: Calendar Utility Functions1151167
+Node: Calendar Bugs1155603
+Node: TCP Function System1156577
+Node: TCP Functions1158186
+Node: TCP Parameters1182840
+Node: TCP Examples1190205
+Node: TCP Bugs1191219
+Node: Zftp Function System1191714
+Node: Installation1193358
+Node: Zftp Functions1194552
+Node: Miscellaneous Features1214284
+Node: User Contributions1221325
+Node: Utilities1222122
+Node: Recent Directories1236929
+Node: Other Directory Functions1248921
+Node: Version Control Information1255986
+Node: vcs_info Quickstart1257820
+Node: vcs_info Configuration1260022
+Node: vcs_info Oddities1274882
+Node: vcs_info Quilt Support1275887
+Node: vcs_info API1281194
+Node: vcs_info Variables1283340
+Node: vcs_info Hooks1284117
+Node: vcs_info Examples1294902
+Node: Prompt Themes1300112
+Node: ZLE Functions1305715
+Node: Exception Handling1368148
+Node: MIME Functions1371483
+Node: Mathematical Functions1389051
+Node: User Configuration Functions1400783
+Node: Other Functions1403166
+Node: Concept Index1422947
+Node: Variables Index1504035
+Node: Options Index1552397
+Node: Functions Index1660416
+Node: Editor Functions Index1703234
+Node: Style and Tag Index1722651
+
+End Tag Table
+
+
+Local Variables:
+coding: utf-8
+End:

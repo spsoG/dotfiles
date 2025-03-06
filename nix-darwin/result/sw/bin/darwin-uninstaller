@@ -1,0 +1,59 @@
+#!/nix/store/iv1k5wr7hbxm51qmdn6l2inq7rd2vfhk-bash-5.2p37/bin/bash
+set -o errexit
+set -o nounset
+set -o pipefail
+
+while [ "$#" -gt 0 ]; do
+  i="$1"; shift 1
+  case "$i" in
+    --help)
+      echo "darwin-uninstaller: [--help]"
+      exit
+      ;;
+  esac
+done
+
+echo >&2
+echo >&2 "Uninstalling nix-darwin, this will:"
+echo >&2
+echo >&2 "    - remove /Applications/Nix Apps symlink"
+echo >&2 "    - cleanup static /etc files"
+echo >&2 "    - disable and remove all launchd services managed by nix-darwin"
+if [[ $(stat -f '%Su' /nix/store) == "root" ]]; then
+  echo >&2 "    - restore nix-daemon service from nix installer as this is a multi-user install"
+fi
+echo >&2
+
+if [[ -t 0 ]]; then
+  read -r -p "Proceed? [y/n] " i
+  case "$i" in
+    y|Y)
+      ;;
+    *)
+      exit 3
+      ;;
+  esac
+fi
+
+/nix/store/smpzfki4j9x11hww9h7bgqgbwcmynfk7-darwin-system-25.05/sw/bin/darwin-rebuild activate
+
+if [[ -L /run/current-system ]]; then
+  sudo rm /run/current-system
+fi
+
+if [[ -L /run ]]; then
+  if [[ -e /etc/synthetic.conf ]]; then
+    sudo sed -i -E '/^run[[:space:]]/d' /etc/synthetic.conf
+    sudo /System/Library/Filesystems/apfs.fs/Contents/Resources/apfs.util -t &>/dev/null || true
+    echo >&2 "NOTE: the /run symlink will be removed on reboot"
+  else
+    sudo rm /run
+  fi
+fi
+
+echo >&2
+echo >&2 "NOTE: The /nix/var/nix/profiles/system* profiles still exist and won't be garbage collected."
+echo >&2
+echo >&2 "Done!"
+echo >&2
+
